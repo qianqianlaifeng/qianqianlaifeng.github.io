@@ -207,6 +207,12 @@ document.addEventListener('click',e=>{const b=e.target.closest('[data-age]');if(
 $('#privO').onclick=e=>{e.preventDefault();$('#privBox').hidden=false};$('#privBox').onclick=e=>{if(e.target.id=='privBox'||e.target.dataset.close!=null)$('#privBox').hidden=true};
 addEventListener('hashchange',()=>{const id=location.hash.split('/')[1];if(!$('#lb').hidden){if(id)return;lbPushed=false;lbClose();setTimeout(route,closing?280:0);return}route()});
 if(innerWidth<=760)$('#q').placeholder='搜索';setLang(st.lang,true);ageSet(st.adult);hdr();countUp();needKeys([...st.sel]).then(()=>tray()).catch(()=>{});st.tab='';if(Q0&&!location.hash)history.replaceState(null,'','?q='+encodeURIComponent(Q0)+'#'+(TABS.includes(QT)?QT:'costume'));route();
-if('serviceWorker'in navigator&&location.protocol!='file:')addEventListener('load',()=>navigator.serviceWorker.register('/sw.js').catch(()=>{}));
+// 废弃离线缓存：国内访问 github.io 超时会回退旧 HTML，导致一直看到旧版。改为每次走网络拿最新页面。
+if('serviceWorker'in navigator){
+  addEventListener('load',()=>{
+    navigator.serviceWorker.getRegistrations().then(rs=>rs.forEach(r=>r.unregister())).catch(()=>{});
+    if(window.caches&&caches.keys)caches.keys().then(ks=>Promise.all(ks.filter(k=>String(k).indexOf('posewear')===0).map(k=>caches.delete(k)))).catch(()=>{});
+  });
+}
 
 window.APP={ok,ageAsk,toggleFav,toggleSel,lbOpen,lbClose,apply,li:()=>li,load,ITEMS,DATA,thumb,big,title,prompt,toast,esc,setTab,st,copy};
