@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /o/
+
+Sitemap: https://qianqianlaifeng.github.io/sitemap_index.xml
