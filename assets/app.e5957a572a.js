@@ -48,21 +48,31 @@ function apply(){const q=st.q.toLowerCase().trim().split(/\s+/).filter(Boolean);
 function card(it,d){const isS=st.sel.includes(it.k),isF=st.fav.has(it.k),P=it.type=='pose',D=it.type=='depth',t=title(it);
  const tags=P||D?[[it.line,''],[it.cat,'c']]:it.type=='portrait'?[[it.sec,'c'],[it.len,'']]:[[it.cat,'c'],...val(it,'item').slice(0,3).map(x=>[x,''])];
  const miss='';
- return `<article class="card ${isS?'sel':''}" data-k="${it.k}" style="animation-delay:${d||0}ms"><div class="ph ${D?'depth':P?'pose':'cos'}" data-a="open"><img loading="lazy" decoding="async"${D?` referrerpolicy="${esc(it.ref||'no-referrer')}"`:''} src="${esc(thumb(it))}" alt="${esc(t)}" width="${P||D?300:it.type=='portrait'?400:360}" height="${P||D?400:it.type=='portrait'?500:540}" draggable="false">${miss}<button class="phk" data-a="open" aria-label="${esc(t)}"></button>
+ return `<article class="card ${isS?'sel':''}" data-k="${it.k}" style="animation-delay:${d||0}ms"><div class="ph ${D?'depth':P?'pose':'cos'}" data-a="open"><img decoding="async"${D?` referrerpolicy="${esc(it.ref||'no-referrer')}"`:''} data-src="${esc(thumb(it))}" alt="${esc(t)}" width="${P||D?300:it.type=='portrait'?400:360}" height="${P||D?400:it.type=='portrait'?500:540}" draggable="false">${miss}<button class="phk" data-a="open" aria-label="${esc(t)}"></button>
  ${it.rk?`<span class="badge rk">TOP ${it.rk}</span>`:''}${P||D?`<span class="badge">${esc(it.no)}</span>${it.a?'<span class="badge age">18+</span>':''}<div class="angs">${it.angles.map((a,i)=>`<span data-a="ang" data-i="${i}" class="${i==it.ai?'on':''}">${esc(a.zh)}</span>`).join('')}</div>`:''}
  ${st.tab=='recent'?'<button data-a="unrec" class="unrec" title="从记录中移除" aria-label="从记录中移除">✕</button>':''}<div class="cbtns"><button data-a="fav" class="${isF?'on':''}" title="${isF?'取消收藏':'收藏'}" aria-label="收藏" aria-pressed="${isF}">${isF?'♥':'♡'}</button><button data-a="sel" class="${isS?'on':''}" title="${isS?'移出组合':'加入组合'}" aria-label="加入组合" aria-pressed="${isS}">${isS?'✓':'＋'}</button></div>${D?'':`<button class="try" data-a="try">${P?'用作姿势参考':it.type=='portrait'?'用作人物参考':'试穿这套'}</button>`}</div>
  <div class="info"><h3 title="${esc(t)}">${esc(t)}</h3><div class="sub">${esc(subtitle(it))}</div>${D?`<div class="sub dim">${esc(it.line)} · ${esc(it.cat)}</div>`:''}<div class="tags">${tags.map(([x,c])=>`<span class="tag ${c}">${esc(x)}</span>`).join('')}</div>
  <div class="copy"><button data-a="cpzh">复制中文</button><button data-a="cpen">复制英文</button></div></div></article>`}
 function grp(k){const t=st.recT[k];if(!t)return'更早';const d=new Date();d.setHours(0,0,0,0);return t>=d?'今天':t>=d-864e5?'昨天':t>=d-6*864e5?'近 7 天':'更早'}
-function more(){if(st.n>=st.list.length)return;const G=st.tab=='recent'&&!st.q&&!Object.values(st.f).some(Boolean);let pg=G&&st.n?grp(st.list[st.n-1].k):'';const h=st.list.slice(st.n,st.n+30).map((it,i)=>{let x='';if(G){const g=grp(it.k);if(g!=pg){x=`<h4 class="grp">${g}</h4>`;pg=g}}return x+card(it,RM?0:Math.min(i,14)*35)}).join('');st.n+=30;$('#grid').insertAdjacentHTML('beforeend',h)}
+function more(){if(st.n>=st.list.length)return;const G=st.tab=='recent'&&!st.q&&!Object.values(st.f).some(Boolean);let pg=G&&st.n?grp(st.list[st.n-1].k):'';const h=st.list.slice(st.n,st.n+30).map((it,i)=>{let x='';if(G){const g=grp(it.k);if(g!=pg){x=`<h4 class="grp">${g}</h4>`;pg=g}}return x+card(it,RM?0:Math.min(i,14)*35)}).join('');st.n+=30;$('#grid').insertAdjacentHTML('beforeend',h);warmNew()}
 const grid=$('#grid');
 grid.addEventListener('load',e=>{if(e.target.tagName=='IMG'){e.target.classList.add('ld');e.target.parentNode.classList.add('done')}},true);
 function imgFail(img,ph){const n=+(img.dataset.rt||0);if(n<3){img.dataset.rt=n+1;ph.classList.remove('err');const u=img.getAttribute('src').split('?')[0]+'?r='+(n+1)+'&t='+Date.now();setTimeout(()=>{if(img.isConnected)img.src=u},600*(n+1))}else ph.classList.add('err','done')}
 grid.addEventListener('error',e=>{if(e.target.tagName=='IMG')imgFail(e.target,e.target.parentNode)},true);
-function swp(){$$('.card .ph img:not(.ld)').forEach(img=>{if(!img.complete)return;const ph=img.parentNode;if(img.naturalWidth>0){img.classList.add('ld');ph.classList.add('done')}else if(+(img.dataset.rt||0)<3)imgFail(img,ph);else ph.classList.add('err','done')})}
-setInterval(swp,900);document.addEventListener('visibilitychange',()=>{if(!document.hidden)swp()});
+function loadImg(img){if(!img||img.dataset.loaded)return;const u=img.getAttribute('data-src');if(!u)return;img.dataset.loaded='1';img.src=u}
+// 主动预热：进入视口前 900px 就开始请求，不等滑动到眼前
+const warmIO=new IntersectionObserver(es=>{es.forEach(e=>{if(e.isIntersecting){loadImg(e.target);warmIO.unobserve(e.target)}})},{rootMargin:'900px 0px'});
+function warmNew(){$$('.card .ph img[data-src]:not([data-loaded])').forEach(img=>warmIO.observe(img))}
+function swp(){$$('.card .ph img:not(.ld)').forEach(img=>{
+  if(!img.getAttribute('src')){loadImg(img);return}
+  if(!img.complete)return;const ph=img.parentNode;
+  if(img.naturalWidth>0){img.classList.add('ld');ph.classList.add('done')}
+  else if(+(img.dataset.rt||0)<3)imgFail(img,ph);
+  else ph.classList.add('err','done')
+})}
+setInterval(swp,400);document.addEventListener('visibilitychange',()=>{if(!document.hidden)swp()});
 new IntersectionObserver(e=>e[0].isIntersecting&&more(),{rootMargin:'1400px'}).observe($('#sentinel'));
-function refreshCard(k){const el=grid.querySelector(`.card[data-k="${CSS.escape(k)}"]`);if(!el)return;const t=document.createElement('div');t.innerHTML=card(ITEMS[k]);const n=t.firstElementChild;n.style.animation='none';n.querySelector('img').classList.add('ld');n.querySelector('.ph').classList.add('done');el.replaceWith(n)}
+function refreshCard(k){const el=grid.querySelector(`.card[data-k="${CSS.escape(k)}"]`);if(!el)return;const t=document.createElement('div');t.innerHTML=card(ITEMS[k]);const n=t.firstElementChild;n.style.animation='none';const rimg=n.querySelector('img');loadImg(rimg);if(rimg.complete&&rimg.naturalWidth>0){rimg.classList.add('ld');n.querySelector('.ph').classList.add('done')}el.replaceWith(n)}
 function setAng(it,i){it.ai=i;st.ang[it.k]=i;SV('ang',st.ang);refreshCard(it.k)}
 function dropCard(k){const el=grid.querySelector(`.card[data-k="${CSS.escape(k)}"]`);const i=st.list.findIndex(x=>x.k==k);if(i>=0){st.list.splice(i,1);st.n=Math.max(0,st.n-1)}const fin=()=>{el&&el.remove();if(!st.list.length)apply();else{const tot=base().length;$('#count').innerHTML=st.list.length==tot?`共 <b>${tot}</b> 项`:`<b>${st.list.length}</b> / ${tot} 项`;grid.querySelectorAll('.rgrp').forEach(g=>{const n=g.nextElementSibling;if(!n||n.classList.contains('rgrp'))g.remove()})}};if(el&&!RM)el.animate([{opacity:1,transform:'none'},{opacity:0,transform:'scale(.92)'}],{duration:220,easing:'cubic-bezier(.4,0,.2,1)'}).finished.then(fin);else fin()}
 function toggleFav(k,quiet){const on=!st.fav.has(k);on?st.fav.add(k):st.fav.delete(k);SV('fav',[...st.fav]);counts();if(!quiet)toast(on?'已加入收藏':'已取消收藏',on?null:()=>{toggleFav(k,1);if(st.tab=='fav')apply()});if(!on&&st.tab=='fav'&&$('#lb').hidden)dropCard(k);else{refreshCard(k);if(st.tab=='fav')pend.add(k)}if(!$('#lb').hidden)lbDraw()}
