@@ -69,8 +69,14 @@ function iqPump(){while(IQactive<IQMAX&&IQ.length){const img=IQ.shift();if(!img|
   const fin=()=>{if(settled)return;settled=true;IQactive--;img.removeEventListener('load',fin);img.removeEventListener('error',fin);iqPump()};
   img.addEventListener('load',fin,{once:true});img.addEventListener('error',fin,{once:true});
   img.src=u;
-  // 兜底：20 秒还没完成就释放槽位，让后面的图继续（避免一张卡死拖垮整队）
-  setTimeout(()=>{if(!settled){settled=true;img.dataset.slot='0';IQactive=Math.max(0,IQactive-1);img.removeEventListener('load',fin);img.removeEventListener('error',fin);iqPump()}},20000);
+  // 兜底：12 秒还没完成就释放槽位，让后面的图继续（避免一张卡死拖垮整队）
+  // 关键修复：超时后必须重排一次，否则该图 src 已设、却永远不会有像素，永久空白
+  const TM=+(img.dataset.tm||0);
+  setTimeout(()=>{if(settled)return;settled=true;img.dataset.slot='0';IQactive=Math.max(0,IQactive-1);
+    img.removeEventListener('load',fin);img.removeEventListener('error',fin);
+    if(TM<2&&img.isConnected){img.dataset.tm=TM+1;img.dataset.loaded='0';img.removeAttribute('src');
+      img.setAttribute('data-src',u.split('?')[0]+'?rt='+(TM+1));img.dataset.loaded='1';IQ.push(img)}
+    iqPump()},12000);
 }}
 // 入队。urgent=插到队首（已在队列中则前移）；重复调用绝不会产生「loaded=1 却不在队列」的死图
 function loadImg(img,urgent){if(!img)return;
@@ -162,7 +168,8 @@ addEventListener('offline',()=>toast('网络已断开，看过的图片还能继
 function addRec(k){st.rec=[k,...st.rec.filter(x=>x!=k)].slice(0,100);st.recT[k]=Date.now();const r={};st.rec.forEach(x=>st.recT[x]&&(r[x]=st.recT[x]));st.recT=r;SV('rec',st.rec);SV('recT',r);counts()}
 addEventListener('storage',e=>{if(!['fav','rec','recT','adult','sel'].includes(e.key))return;st.fav=new Set(LS('fav')||[]);st.rec=LS('rec')||[];st.recT=LS('recT')||{};st.sel=LS('sel')||[];if(e.key=='adult'&&st.adult!=(LS('adult')===true))ageSet(LS('adult')===true);counts();needKeys([...st.fav,...st.rec,...st.sel]).then(()=>{tray();if((st.tab=='fav'||st.tab=='recent')&&$('#lb').hidden)apply()}).catch(()=>{})});
 // 大图
-let li=0,srcCard=null;const pre=new Map();function preload(src){if(pre.has(src))return pre.get(src);const p=new Promise(r=>{const i=new Image();if(/^https?:/i.test(src))i.referrerPolicy='no-referrer';i.onload=()=>r(src);i.onerror=()=>r(null);i.src=src});pre.set(src,p);if(pre.size>80)pre.delete(pre.keys().next().value);return p}
+let li=0,srcCard=null;const pre=new Map();const idle=fn=>{try{(window.requestIdleCallback||(f=>setTimeout(f,1500)))(fn,{timeout:3000})}catch(e){setTimeout(fn,1500)}};
+function preload(src,ms){if(pre.has(src))return pre.get(src);const p=new Promise(r=>{let done=false;const fin=v=>{if(done)return;done=true;clearTimeout(tm);r(v)};const i=new Image();if(/^https?:/i.test(src))i.referrerPolicy='no-referrer';i.onload=()=>fin(src);i.onerror=()=>fin(null);const tm=setTimeout(()=>fin(null),ms||12000);i.src=src});pre.set(src,p);if(pre.size>80)pre.delete(pre.keys().next().value);return p}
 function rectAnim(el,from,rev){const to=el.getBoundingClientRect();if(!from||!to.width)return el.animate([{opacity:0,transform:'scale(.94)'},{opacity:1,transform:'none'}],{duration:rev?220:380,easing:'cubic-bezier(.16,1,.3,1)',direction:rev?'reverse':'normal',fill:'both'});
  const dx=from.left+from.width/2-(to.left+to.width/2),dy=from.top+from.height/2-(to.top+to.height/2),s=Math.max(from.width/to.width,.08);
  return el.animate([{transform:`translate(${dx}px,${dy}px) scale(${s})`,opacity:.2,borderRadius:'40px'},{transform:'none',opacity:1,borderRadius:'20px'}],{duration:rev?320:520,easing:rev?'cubic-bezier(.4,0,.2,1)':'cubic-bezier(.16,1,.3,1)',direction:rev?'reverse':'normal',fill:'both'})}
@@ -175,8 +182,8 @@ function lbDraw(){const it=st.list[li];if(!it)return;const img=$('#lbImg'),box=$
  history.replaceState(null,'','#'+it.type+'/'+it.id);
  box.classList.toggle('ext',!!it.ext);box.classList.remove('fail');const missEl=$('#lbMiss');if(missEl&&!missEl.dataset.on){missEl.dataset.on='1';const re=()=>{const im=$('#lbImg');im.dataset.src='';$('.lb-img').classList.remove('fail');lbDraw()};missEl.addEventListener('click',re);missEl.addEventListener('keydown',e=>{if(e.key=='Enter'||e.key==' '){e.preventDefault();re()}})}
  img.referrerPolicy=it.ref||'';img.onerror=()=>{if(D&&img.dataset.src==src){box.classList.add('fail');box.classList.remove('loading')}};
- if(img.dataset.src!=src){img.dataset.src=src;img.removeAttribute('srcset');img.src=thumb(it);img.classList.add('lo');box.classList.add('loading');preload(src).then(s=>{if(img.dataset.src!=src)return;if(s){img.src=s;if(it.type=='costume'||it.type=='anime'){img.sizes='(max-width:760px) 100vw, 60vw';img.srcset=`${it.m} 1080w, ${it.i} 1366w`}img.classList.remove('lo');box.classList.remove('loading');box.classList.remove('fail')}else if(D){box.classList.add('fail');box.classList.remove('loading');img.classList.remove('lo')}})}
- [1,-1,2].forEach(d=>{const n=st.list[(li+d+st.list.length)%st.list.length];n&&preload(big(n))});if(it.angles)it.angles.forEach(a=>preload(a.i));
+ if(img.dataset.src!=src){img.dataset.src=src;img.removeAttribute('srcset');img.src=thumb(it);img.classList.add('lo');box.classList.add('loading');preload(src).then(s=>{if(img.dataset.src!=src)return;if(s){img.src=s;if(it.type=='costume'||it.type=='anime'){img.sizes='(max-width:760px) 100vw, 60vw';img.srcset=`${it.m} 1080w, ${it.i} 1366w`}img.classList.remove('lo');box.classList.remove('loading');box.classList.remove('fail')}else{box.classList.add('fail');box.classList.remove('loading');img.classList.remove('lo')}})}
+ [1,-1,2].forEach(d=>{const n=st.list[(li+d+st.list.length)%st.list.length];n&&idle(()=>{if(img.dataset.src==src)preload(big(n))})});if(it.angles)idle(()=>it.angles.forEach(a=>{if(img.dataset.src==src)preload(a.t)}));
  const P=it.type=='pose',isF=st.fav.has(it.k),isS=st.sel.includes(it.k);img.alt=title(it);
  const zh=`<div class="pbox"><small>中文描述</small><p>${esc(prompt(it,'zh'))}</p><button class="sm pri" data-c="zh">复制中文</button></div>`,en=`<div class="pbox en"><small>英文提示词 · PROMPT</small><p>${esc(prompt(it,'en'))}</p><button class="sm" data-c="en">复制英文</button></div>`;
  const ang=P||D, meta=ang?it.line+' · '+it.cat+(D?' · '+it.angles[it.ai].zh:'')+' · 编号 '+it.no:it.type=='portrait'?it.sec+' · '+it.len+' · 编号 '+it.no+(it.rk?' · 人气第 '+it.rk+' 名':''):it.cat+' · 编号 '+it.id;
