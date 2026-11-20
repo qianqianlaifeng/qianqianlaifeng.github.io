@@ -61,7 +61,7 @@ function imgFail(img,ph){const n=+(img.dataset.rt||0);if(n<3){img.dataset.rt=n+1
 grid.addEventListener('error',e=>{if(e.target.tagName=='IMG')imgFail(e.target,e.target.parentNode)},true);
 function loadImg(img){if(!img||img.dataset.loaded)return;const u=img.getAttribute('data-src');if(!u)return;img.dataset.loaded='1';img.src=u}
 // 主动预热：进入视口前 900px 就开始请求，不等滑动到眼前
-const warmIO=new IntersectionObserver(es=>{es.forEach(e=>{if(e.isIntersecting){loadImg(e.target);warmIO.unobserve(e.target)}})},{rootMargin:'900px 0px'});
+const warmIO=new IntersectionObserver(es=>{es.forEach(e=>{if(e.isIntersecting){loadImg(e.target);warmIO.unobserve(e.target)}})},{rootMargin:'2000px 0px'});
 function warmNew(){$$('.card .ph img[data-src]:not([data-loaded])').forEach(img=>warmIO.observe(img))}
 function swp(){$$('.card .ph img:not(.ld)').forEach(img=>{
   if(!img.getAttribute('src')){loadImg(img);return}
