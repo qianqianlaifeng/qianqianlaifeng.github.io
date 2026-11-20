@@ -59,10 +59,22 @@ const grid=$('#grid');
 grid.addEventListener('load',e=>{if(e.target.tagName=='IMG'){e.target.classList.add('ld');e.target.parentNode.classList.add('done')}},true);
 function imgFail(img,ph){const n=+(img.dataset.rt||0);if(n<3){img.dataset.rt=n+1;ph.classList.remove('err');const u=img.getAttribute('src').split('?')[0]+'?r='+(n+1)+'&t='+Date.now();setTimeout(()=>{if(img.isConnected)img.src=u},600*(n+1))}else ph.classList.add('err','done')}
 grid.addEventListener('error',e=>{if(e.target.tagName=='IMG')imgFail(e.target,e.target.parentNode)},true);
-function loadImg(img){if(!img||img.dataset.loaded)return;const u=img.getAttribute('data-src');if(!u)return;img.dataset.loaded='1';img.src=u}
-// 主动预热：进入视口前 900px 就开始请求，不等滑动到眼前
-const warmIO=new IntersectionObserver(es=>{es.forEach(e=>{if(e.isIntersecting){loadImg(e.target);warmIO.unobserve(e.target)}})},{rootMargin:'2000px 0px'});
-function warmNew(){$$('.card .ph img[data-src]:not([data-loaded])').forEach(img=>warmIO.observe(img))}
+// —— 图片并发下载队列：CDN 并发超 16 会断崖变慢(30张=49秒)，限 6 路保证每张~3秒 ——
+const IQ=[];let IQactive=0;const IQMAX=6;
+function iqPump(){while(IQactive<IQMAX&&IQ.length){const img=IQ.shift();if(!img||!img.isConnected||img.dataset.loaded==='2')continue;
+  const u=img.getAttribute('data-src');if(!u)continue;img.dataset.loaded='2';IQactive++;
+  const fin=()=>{IQactive--;img.removeEventListener('load',fin);img.removeEventListener('error',fin);iqPump()};
+  img.addEventListener('load',fin,{once:true});img.addEventListener('error',fin,{once:true});
+  img.src=u;
+  // 兜底：超时也释放槽位（应对 CDN 假死）
+  setTimeout(()=>{if(!img.complete&&img.dataset.slot!=='0'){img.dataset.slot='0';IQactive=Math.max(0,IQactive-1);img.removeEventListener('load',fin);img.removeEventListener('error',fin);iqPump()}},20000);
+}}
+function loadImg(img,urgent){if(!img||img.dataset.loaded)return;img.dataset.loaded='1';const u=img.getAttribute('data-src');if(!u)return;
+  if(urgent){IQ.unshift(img)}else{IQ.push(img)}iqPump()}
+// 分级预热：真正进入视口的图 urgent 插队最优先；提前区域普通排队
+const viewIO=new IntersectionObserver(es=>{es.forEach(e=>{if(e.isIntersecting){const img=e.target;if(img.dataset.loaded==='1'){const i=IQ.indexOf(img);if(i>=0)IQ.splice(i,1)}loadImg(img,true);viewIO.unobserve(img)}})},{rootMargin:'200px 0px'});
+const warmIO=new IntersectionObserver(es=>{es.forEach(e=>{if(e.isIntersecting){loadImg(e.target);warmIO.unobserve(e.target)}})},{rootMargin:'1600px 0px'});
+function warmNew(){$$('.card .ph img[data-src]:not([data-loaded])').forEach(img=>{warmIO.observe(img);viewIO.observe(img)})}
 function swp(){$$('.card .ph img:not(.ld)').forEach(img=>{
   if(!img.getAttribute('src')){loadImg(img);return}
   if(!img.complete)return;const ph=img.parentNode;
