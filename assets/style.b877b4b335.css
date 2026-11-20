@@ -278,10 +278,8 @@ body.studio .top{background:#fafafa}[data-theme=dark] body.studio .top{backgroun
 .stage{min-height:620px;background:var(--sf);border-radius:16px}
 .ph0 span{font-size:17px}.ph0 span::before{display:none}.ph0 p{line-height:1.8}
 .ill{display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:22px}
-.ill i{width:88px;height:116px;border-radius:16px;background:var(--bg2);box-shadow:0 6px 20px rgba(0,0,0,.07);display:grid;place-items:end center;padding-bottom:10px;font-style:normal;font-size:12px;color:var(--mu);position:relative;overflow:hidden}
-.ill i::before{content:"";position:absolute;left:50%;top:18px;transform:translateX(-50%);width:44px;height:64px;border-radius:22px 22px 10px 10px;background:#ececec}
-.ill .c2::before{background:#ffd9df;border-radius:8px 8px 14px 14px;width:50px}
-.ill .c3{width:104px;height:138px;background:linear-gradient(160deg,#ff6b81,#ff2442);color:#fff;font-size:26px;place-items:center;padding:0;box-shadow:0 12px 30px rgba(255,36,66,.3)}.ill .c3::before{display:none}
+.ill img{width:88px;height:116px;border-radius:16px;object-fit:cover;background:var(--bg2);box-shadow:0 6px 20px rgba(0,0,0,.10);display:block}
+.ill .c3{width:104px;height:138px;border-radius:18px;box-shadow:0 12px 30px rgba(255,36,66,.16);outline:2px solid rgba(255,36,66,.32);outline-offset:2px}
 .ill em{font-style:normal;color:#ccc;font-size:20px;font-weight:300}
 .busy{background:var(--sf);backdrop-filter:none}
 .skel0{position:absolute;inset:24px;margin:auto;max-width:420px;border-radius:16px;background:linear-gradient(100deg,#ececec 30%,#f8f8f8 50%,#ececec 70%);background-size:250% 100%;animation:sh 1.4s infinite linear;z-index:-1;opacity:.9}
@@ -301,7 +299,7 @@ body.studio .top{background:#fafafa}[data-theme=dark] body.studio .top{backgroun
 @media(max-width:860px){
  body.studio{padding-bottom:0}#studio{padding:10px 12px 20px}.st-head>div:first-child{gap:10px}.st-head h2{font-size:20px}.modes{width:100%}
  .gobar{position:fixed;left:0;right:0;bottom:0;border-radius:20px 20px 0 0;padding:10px 12px calc(10px + env(safe-area-inset-bottom));z-index:30}
- body.studio .foot{padding-bottom:180px}.st-out{margin-bottom:20px}.stage,.cmp{min-height:440px}.ill i{width:70px;height:94px}.ill .c3{width:84px;height:112px}
+ body.studio .foot{padding-bottom:180px}.st-out{margin-bottom:20px}.stage,.cmp{min-height:440px}.ill img{width:70px;height:94px}.ill .c3{width:84px;height:112px}
  .onb{flex-wrap:wrap}.onb .pri{width:100%}
 }
 .st-head>div:first-child{flex:1;min-width:0}
@@ -400,7 +398,7 @@ body.batch .card .badge,body.batch .card .angs{display:none}
 /* ===== v9 去 AI 味 ===== */
 .mark{background:none;color:var(--ac);width:30px;height:30px;border-radius:0}.mark svg{width:30px;height:30px;display:block}
 .onb{background:#f6f6f6}[data-theme=dark] .onb{background:#1d1d1d}.onb-i{color:#111;font-size:0}
-.ill .c3{background:#fff;color:#999;font-size:13px;box-shadow:none;border:1.5px dashed #d6d6d6}
+.ill .c3{color:#999;font-size:13px}
 #wbGo::after{display:none!important;animation:none!important}
 @media(max-width:760px){.tbar{flex-wrap:wrap;row-gap:8px}.tbar .sp{flex-basis:100%;height:0}}
 @media(max-width:760px){.angs{flex-wrap:nowrap;overflow:hidden}.angs span{white-space:nowrap;flex:none;padding:3px 7px;font-size:11px}#batchBtn{width:38px;height:34px;justify-content:center;background:var(--sf,#f5f5f5)}#batchBtn svg{width:18px;height:18px}}
@@ -421,10 +419,8 @@ body.none0 #favTools,body.none0 #fBtn,body.none0 #sort,body.none0 #batchBtn,body
 .lnkb{background:none;border:0;padding:0 0 0 6px;color:var(--tx);text-decoration:underline;font-size:inherit;cursor:pointer}
 .copy-r a{color:inherit}
 /* 深色：试穿占位、结果框、钥匙图标 */
-[data-theme=dark] .ill i{background:#1f1f1f;box-shadow:none;color:#9a9a9a}
-[data-theme=dark] .ill i::before{background:#333}
-[data-theme=dark] .ill .c2::before{background:#4a2a31}
-[data-theme=dark] .ill .c3{background:#171717;color:#9a9a9a;border-color:#3a3a3a}
+[data-theme=dark] .ill img{background:#1f1f1f}
+[data-theme=dark] .ill .c3{outline-color:rgba(255,120,140,.4)}
 [data-theme=dark] .ill em{color:#555}
 [data-theme=dark] .onb-i{background:#2a2a2a;color:#eee;box-shadow:none}
 @media(max-width:760px){.st-l>.onb{margin:0 0 12px}}
