@@ -543,3 +543,13 @@ body,body.studio{background:transparent}
 .bar{background:rgba(255,255,255,.82);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
 [data-theme=dark] .bar{background:rgba(17,17,17,.82)}
 @media(prefers-reduced-motion:reduce){#bgfx{opacity:.6}}
+
+/* ---------- v13 修复：鼠标悬停卡片图片消失 ----------
+   卡片图片上铺着一层透明的整块按钮 .phk（点击放大用）。
+   全局 button:hover{background:var(--sf2)} 的优先级(0,1,1)高于 .phk(0,1,0)，
+   悬停时这层按钮被填成不透明浅灰 rgb(235,235,235)，正好盖住下面的图片，
+   于是看起来「鼠标一滑上去图就没了」，只露出爱心/＋/试穿按钮。
+   这里把点击层的 hover/active 态固定回全透明，交互和点击范围不变。 */
+.phk,.phk:hover,.phk:focus,.phk:focus-visible,.phk:active{
+  background:none!important;box-shadow:none!important;transform:none!important;
+}
