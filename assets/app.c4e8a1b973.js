@@ -186,25 +186,19 @@ function lbDraw(){const it=st.list[li];if(!it)return;const img=$('#lbImg'),box=$
  box.classList.toggle('ext',!!it.ext);box.classList.remove('fail');const missEl=$('#lbMiss');if(missEl&&!missEl.dataset.on){missEl.dataset.on='1';const re=()=>{const im=$('#lbImg');im.dataset.src='';$('.lb-img').classList.remove('fail');lbDraw()};missEl.addEventListener('click',re);missEl.addEventListener('keydown',e=>{if(e.key=='Enter'||e.key==' '){e.preventDefault();re()}})}
  img.referrerPolicy=it.ref||'';
  if(img.dataset.src!=src){
-  img.dataset.src=src;img.removeAttribute('srcset');img.dataset.fb='0';
+  img.dataset.src=src;img.removeAttribute('srcset');
+  /* 依次尝试：本站镜像大图 -> 原站缩略图；谁先成功显示谁，全失败才给重试 */
+  const chain=[localBig(it,src),thumb(it)].filter(Boolean);
+  img.dataset.chain=chain.join('||');img.dataset.i='0';
   box.classList.remove('fail','loading');img.classList.remove('lo');
-  /* ① 先用缩略图顶上：网格里基本已缓存，点开立刻有图，不再停在模糊小图上转圈 */
-  const tsrc=thumb(it);
   img.onload=()=>{if(img.naturalWidth){box.classList.remove('loading','fail');img.classList.remove('lo')}};
   img.onerror=()=>{
     if(img.dataset.src!=src)return;
-    const n=+(img.dataset.fb||0);
-    if(n<2){img.dataset.fb=String(n+1);setTimeout(()=>{if(img.isConnected&&img.dataset.src==src)img.src=tsrc.split('?')[0]+'?r='+(n+1)},700*(n+1))}
+    const c=(img.dataset.chain||'').split('||'),n=+(img.dataset.i||0);
+    if(n+1<c.length){img.dataset.i=String(n+1);img.src=c[n+1]}
     else{box.classList.add('fail');box.classList.remove('loading');img.classList.remove('lo')}
   };
-  img.src=tsrc;
-  /* ② 后台取清晰大图：先本站镜像，再回原站；取到无缝替换，取不到就一直用缩略图 */
-  preloadChain([localBig(it,src),src].filter(Boolean)).then(s=>{
-    if(!s||img.dataset.src!=src)return;
-    const up=new Image();up.referrerPolicy=it.ref||'';
-    up.onload=()=>{if(img.dataset.src==src&&up.naturalWidth){img.removeAttribute('srcset');img.src=s}};
-    up.src=s;
-  });
+  img.src=chain[0];
  }
  [1,-1,2].forEach(d=>{const n=st.list[(li+d+st.list.length)%st.list.length];n&&idle(()=>{if(img.dataset.src==src)preload(big(n))})});if(it.angles)idle(()=>it.angles.forEach(a=>{if(img.dataset.src==src)preload(a.t)}));
  const P=it.type=='pose',isF=st.fav.has(it.k),isS=st.sel.includes(it.k);img.alt=title(it);
