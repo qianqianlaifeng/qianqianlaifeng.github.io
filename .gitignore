@@ -1,1 +1,10 @@
 *.part
+_plan/
+_heromap.json
+_heros.json
+_t20.txt
+_mainurls.txt
+_*.py
+_mt/
+_p1/
+_pt/
